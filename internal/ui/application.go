@@ -8,12 +8,6 @@ import (
 	"strings"
 )
 
-type ApplicationPrimitive interface {
-	SetFocus(p tview.Primitive) *tview.Application
-	Draw() *tview.Application
-	QueueUpdateDraw(func()) *tview.Application
-}
-
 // Application is our application with base menu and pages on it
 type Application struct {
 	*tview.Application
@@ -101,6 +95,29 @@ func (app *Application) AddSection(title string, item *mrList) {
 }
 
 func (app *Application) Run() error {
+	screen, err := tcell.NewScreen()
+	if err != nil {
+		return err
+	}
+	if err := screen.Init(); err != nil {
+		return err
+	}
+	screen.EnableMouse()
+
+	defer func() {
+		if p := recover(); p != nil {
+			if screen != nil {
+				screen.Fini()
+			}
+			panic(p)
+		}
+	}()
+
+	app.SetScreen(screen)
+	app.SetFocus(app.menu)
+	app.menu.Highlight("0")
+	app.pages.SwitchToPage("0")
+	app.ForceDraw()
 	app.switchToTab("0")
 	return app.Application.Run()
 }
@@ -109,11 +126,11 @@ func (app *Application) switchToTab(name string) *mrList {
 	if !app.pages.IsPageExists(name) {
 		return nil
 	}
+	app.menu.Highlight(name)
 	el := app.pages.SwitchToPage(name).(*mrList)
 	if el != nil && !el.initialized {
 		el.Refresh()
 	}
-	app.menu.Highlight(name)
 	return el
 }
 

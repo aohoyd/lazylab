@@ -54,12 +54,11 @@ type mrList struct {
 
 func NewMRList(app *Application) *mrList {
 	pages := newPages()
-	pages.SetBorder(false)
+	pages.SetBorder(true).SetTitle("Loading...")
 	list := tview.NewList().SetMainTextColor(tcell.ColorYellow).SetHighlightFullLine(true)
 	list.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
 		pages.SwitchToPage(strconv.Itoa(index))
 	})
-
 	main := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
 		AddItem(list, 0, 1, true).
@@ -124,9 +123,13 @@ func (m *mrList) Clear() {
 func (m *mrList) Refresh() {
 	m.initialized = true
 	m.Clear()
+	m.pages.SetBorder(true)
+	m.app.ForceDraw()
 	if m.refresh != nil {
 		m.refresh()
 	}
+	m.pages.SetBorder(false)
+	m.app.ForceDraw()
 }
 
 func (m *mrList) SetRefresh(fn func()) {
